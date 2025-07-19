@@ -9,6 +9,7 @@ import { ChatInput } from "./ChatInput";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { Conversation, Message } from "@/lib/database";
 import { Bot, AlertCircle } from "lucide-react";
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export function ChatInterface() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -176,16 +177,19 @@ export function ChatInterface() {
                   Kimi K2 Instruct Chat
                 </h1>
               </div>
-              <Badge variant="secondary">
+              <Badge variant="default" className="bg-primary text-primary-foreground">
                 Powered by Groq
               </Badge>
             </div>
             
-            {currentConversation && (
-              <div className="text-sm text-muted-foreground">
-                {currentConversation.title}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {currentConversation && (
+                <div className="text-sm text-muted-foreground">
+                  {currentConversation.title}
+                </div>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
 
@@ -194,7 +198,7 @@ export function ChatInterface() {
           <ScrollArea className="flex-1 p-4 pb-24">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
-                <Bot className="w-16 h-16 text-muted-foreground mb-4" />
+                <Bot className="w-16 h-16 text-primary mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">
                   Welcome to Kimi K2 Instruct Assistant!
                 </h2>
