@@ -153,6 +153,21 @@ export class ChatDatabase {
     this.db.close();
   }
 
+  // Reset database - clear all data
+  resetDatabase(): void {
+    try {
+      this.db.exec(`
+        DELETE FROM messages;
+        DELETE FROM conversations;
+        DELETE FROM sqlite_sequence WHERE name IN ('messages', 'conversations');
+      `);
+      console.log('Database reset successfully');
+    } catch (error) {
+      console.error('Error resetting database:', error);
+      throw error;
+    }
+  }
+
   // Get conversation context for AI
   getConversationContext(conversationId: number, maxMessages: number = 20): string {
     const messages = this.getRecentMessages(conversationId, maxMessages);

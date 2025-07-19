@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
             currentConversationId = await db.createConversation(title);
           }
 
-          const userMessage = await db.saveMessage(currentConversationId, 'user', message);
+          const userMessage = await db.addMessage(currentConversationId, 'user', message);
 
           // Send initial data with conversation info
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Save complete AI response
-          const assistantMessage = await db.saveMessage(currentConversationId, 'assistant', fullResponse);
+          const assistantMessage = await db.addMessage(currentConversationId, 'assistant', fullResponse);
 
           // Send completion data
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({

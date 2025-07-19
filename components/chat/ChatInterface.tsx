@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { Conversation, Message } from "@/lib/database";
-import { Bot, AlertCircle } from "lucide-react";
+import { Bot, AlertCircle, Trash2 } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export function ChatInterface() {
@@ -276,6 +277,31 @@ export function ChatInterface() {
     }
   };
 
+  const resetDatabase = async () => {
+    if (!confirm('Are you sure you want to reset the database? This will delete ALL conversations and messages permanently.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/database/reset', {
+        method: 'POST',
+      });
+
+      if (!response.ok) throw new Error('Failed to reset database');
+
+      // Clear local state
+      setConversations([]);
+      setCurrentConversation(null);
+      setMessages([]);
+      setError(null);
+      
+      alert('Database reset successfully!');
+    } catch (error) {
+      console.error('Error resetting database:', error);
+      setError('Error resetting database');
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -311,6 +337,16 @@ export function ChatInterface() {
                   {currentConversation.title}
                 </div>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetDatabase}
+                className="text-destructive hover:text-destructive"
+                title="Reset Database"
+              >
+                <Trash2 className="h-4 w-4" />
+                Reset DB
+              </Button>
               <ThemeToggle />
             </div>
           </div>
