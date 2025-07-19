@@ -1,0 +1,243 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { ChatMessage } from "./ChatMessage";
+import { ChatInput } from "./ChatInput";
+import { ConversationSidebar } from "./ConversationSidebar";
+import { Conversation, Message } from "@/lib/database";
+import { Bot, AlertCircle } from "lucide-react";
+
+export function ChatInterface() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conversations on mount
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const loadConversations = async () => {
+    try {
+      setIsLoadingConversations(true);
+      const response = await fetch('/api/conversations');
+      if (!response.ok) throw new Error('Failed to load conversations');
+      
+      const data = await response.json();
+      setConversations(data.conversations);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setError('Error loading conversations');
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  const loadConversation = async (conversationId: number) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/chat?conversationId=${conversationId}`);
+      if (!response.ok) throw new Error('Failed to load conversation');
+      
+      const data = await response.json();
+      setCurrentConversation(data.conversation);
+      setMessages(data.messages);
+      setError(null);
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      setError('Error loading conversation');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: content,
+          conversationId: currentConversation?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      
+      // If this is a new conversation, update the current conversation
+      if (!currentConversation) {
+        setCurrentConversation({
+          id: data.conversationId,
+          title: data.userMessage.content.slice(0, 50) + '...',
+          created_at: data.userMessage.created_at,
+          updated_at: data.userMessage.created_at,
+        });
+        // Reload conversations to get the new one
+        loadConversations();
+      }
+
+      // Add both user and assistant messages
+      setMessages(prev => [
+        ...prev,
+        data.userMessage,
+        data.assistantMessage,
+      ]);
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setError('Error sending message. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startNewConversation = () => {
+    setCurrentConversation(null);
+    setMessages([]);
+    setError(null);
+  };
+
+  const selectConversation = (id: number) => {
+    if (currentConversation?.id !== id) {
+      loadConversation(id);
+    }
+  };
+
+  const deleteConversation = async (id: number) => {
+    try {
+      const response = await fetch(`/api/conversations?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete conversation');
+
+      // Remove from local state
+      setConversations(prev => prev.filter(conv => conv.id !== id));
+      
+      // If this was the current conversation, clear it
+      if (currentConversation?.id === id) {
+        startNewConversation();
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      setError('Error deleting conversation');
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <ConversationSidebar
+        conversations={conversations}
+        currentConversationId={currentConversation?.id || null}
+        onSelectConversation={selectConversation}
+        onNewConversation={startNewConversation}
+        onDeleteConversation={deleteConversation}
+        isLoading={isLoadingConversations}
+      />
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="border-b p-4 bg-background">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Bot className="w-6 h-6 text-primary" />
+                <h1 className="text-xl font-semibold">
+                  AI Chat Assistant
+                </h1>
+              </div>
+              <Badge variant="secondary">
+                Powered by Groq
+              </Badge>
+            </div>
+            
+            {currentConversation && (
+              <div className="text-sm text-muted-foreground">
+                {currentConversation.title}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 flex flex-col">
+          <ScrollArea className="flex-1 p-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <Bot className="w-16 h-16 text-muted-foreground mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">
+                  Welcome to AI Chat Assistant!
+                </h2>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                  I'm here to help you with a wide variety of tasks. Ask me anything!
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Badge variant="outline">General AI Assistant</Badge>
+                  <Badge variant="outline">Programming Help</Badge>
+                  <Badge variant="outline">Problem Solving</Badge>
+                  <Badge variant="outline">Creative Writing</Badge>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <ChatMessage key={message.id} message={message} />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mx-4 mb-2">
+              <Card className="p-3 bg-destructive/10 border-destructive/20">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Chat Input */}
+          <ChatInput
+            onSendMessage={sendMessage}
+            isLoading={isLoading}
+            disabled={isLoadingConversations}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
