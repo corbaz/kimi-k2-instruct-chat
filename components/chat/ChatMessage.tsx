@@ -64,6 +64,25 @@ export function ChatMessage({ message }: ChatMessageProps) {
                       return <MermaidDiagram chart={code} />;
                     }
 
+                    // Handle LaTeX code blocks with a notice
+                    if (language === 'latex' || language === 'tex') {
+                      return (
+                        <div className="my-4 p-4 bg-muted rounded-lg border-l-4 border-yellow-500">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="text-xs font-medium text-muted-foreground uppercase">
+                              LaTeX
+                            </div>
+                            <div className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                              LaTeX rendering not supported
+                            </div>
+                          </div>
+                          <pre className="bg-background p-2 rounded text-sm overflow-x-auto">
+                            <code>{String(children).replace(/\n$/, '')}</code>
+                          </pre>
+                        </div>
+                      );
+                    }
+
                     
                     return (
                       <code className={className} {...props}>
