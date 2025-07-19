@@ -11,6 +11,7 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
+import { MermaidDiagram } from './MermaidDiagram';
 import 'highlight.js/styles/github-dark.css';
 import 'katex/dist/katex.min.css';
 
@@ -59,6 +60,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
                         </code>
                       );
                     }
+
+                    // Handle Mermaid diagrams
+                    if (language === 'mermaid') {
+                      const code = String(children).replace(/\n$/, '');
+                      return <MermaidDiagram chart={code} />;
+                    }
                     
                     return (
                       <code className={className} {...props}>
@@ -72,6 +79,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
                     const match = /language-(\w+)/.exec(className);
                     const language = match ? match[1] : '';
                     const code = codeElement?.children || '';
+                    
+                    // Skip pre wrapper for Mermaid diagrams as they're handled by the code component
+                    if (language === 'mermaid') {
+                      return children;
+                    }
                     
                     const copyToClipboard = () => {
                       if (typeof code === 'string') {
