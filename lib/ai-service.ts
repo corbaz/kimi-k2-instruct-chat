@@ -62,7 +62,7 @@ Please be helpful, accurate, and provide clear explanations. If you're unsure ab
       return response;
     } catch (error) {
       console.error('Error generating AI response:', error);
-      throw new Error('Fehler beim Generieren der Antwort. Bitte versuche es erneut.');
+      throw new Error('Error generating response. Please try again.');
     }
   }
 

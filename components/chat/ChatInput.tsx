@@ -34,7 +34,7 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Stelle eine Frage zu Next.js, Tailwind CSS oder shadcn/ui..."
+          placeholder="Ask me anything..."
           className="min-h-[60px] max-h-[120px] resize-none"
           disabled={disabled || isLoading}
         />
