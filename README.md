@@ -1,6 +1,6 @@
-# AI Chat Assistant with Kimi-2 + Groq
+# Kimi K2 Instruct Chat
 
-A modern, full-stack web application with an intelligent chat interface powered by Groq's Kimi-2 Instruct model, built with the latest technologies for 2025.
+A modern, full-stack web application with an intelligent chat interface powered by Groq's Kimi-K2 Instruct model, built with the latest technologies for 2025.
 
 ## 🚀 Tech Stack
 
@@ -14,7 +14,7 @@ A modern, full-stack web application with an intelligent chat interface powered 
 
 ## ✨ Features
 
-- 🤖 **Kimi-2 AI Assistant** - Powered by Groq's lightning-fast inference (~250 tokens/sec)
+- 🤖 **Kimi K2 AI Assistant** - Powered by Groq's lightning-fast inference (~250 tokens/sec)
 - 🎯 **General Purpose AI** - Help with programming, writing, problem-solving, and more
 - 💾 **Persistent Chat History** - SQLite database stores all conversations
 - 🔄 **Conversation Management** - Create, view, and delete chat sessions
@@ -22,10 +22,14 @@ A modern, full-stack web application with an intelligent chat interface powered 
 - 🎯 **128K Context Window** - Maintains long conversation context
 - ⚡ **Zero Configuration** - Tailwind CSS v4 requires no config file
 - 🎨 **Modern UI Components** - Pre-built shadcn/ui components
-- 🌙 **Dark Mode Support** - Built-in theme switching
-- 📱 **Responsive Design** - Mobile-first approach
+- 🌙 **Dark Mode Support** - Built-in theme switching with system detection
+- 📱 **Responsive Design** - Mobile-first approach with sticky input
 - 🔧 **TypeScript Ready** - Full type safety
 - 🚀 **Performance Optimized** - Next.js 15 optimizations
+- 🎨 **Groq Branding** - Beautiful Groq-themed UI design
+- 📝 **Markdown Support** - Rich text rendering with syntax highlighting
+- 📊 **Mermaid Diagrams** - Interactive diagram rendering
+- 🚫 **LaTeX Notice** - Clear messaging for unsupported LaTeX content
 
 ## 🛠️ Installation
 
@@ -61,7 +65,7 @@ A modern, full-stack web application with an intelligent chat interface powered 
 5. **Open your browser:**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 🤖 Kimi-2 Instruct Model
+## 🤖 Kimi K2 Instruct Model
 
 ### Model Specifications
 - **Parameters**: 1T (32B active)
@@ -82,8 +86,13 @@ A modern, full-stack web application with an intelligent chat interface powered 
 - **Conversation History** - All chats saved automatically
 - **Message Threading** - Maintains context across messages
 - **Ultra-Fast Responses** - Groq's optimized inference
-- **Conversation Management** - Create, rename, delete conversations
+- **Conversation Management** - Create, delete conversations
 - **Responsive Design** - Works on desktop and mobile
+- **Dark Mode Toggle** - Light, dark, and system theme options
+- **Sticky Input** - Chat input stays visible while scrolling
+- **Groq Branding** - Beautiful orange-themed design
+- **Markdown Rendering** - Code syntax highlighting and formatting
+- **Mermaid Diagrams** - Interactive diagram support
 
 ## 📁 Project Structure
 
@@ -100,7 +109,11 @@ A modern, full-stack web application with an intelligent chat interface powered 
 │   │   ├── ChatInterface.tsx   # Main chat component
 │   │   ├── ChatMessage.tsx     # Message display
 │   │   ├── ChatInput.tsx       # Message input
-│   │   └── ConversationSidebar.tsx # Sidebar
+│   │   ├── ConversationSidebar.tsx # Sidebar
+│   │   └── MermaidDiagram.tsx  # Mermaid diagram renderer
+│   ├── theme/                  # Theme management
+│   │   ├── ThemeProvider.tsx   # Theme context provider
+│   │   └── ThemeToggle.tsx     # Dark mode toggle
 │   └── ui/                     # shadcn/ui components
 ├── lib/                        # Utility functions
 │   ├── database.ts             # SQLite database utilities
@@ -139,13 +152,13 @@ GROQ_API_KEY=your_groq_api_key_here
 NODE_ENV=development
 ```
 
-### Kimi-2 Model Configuration
+### Kimi K2 Model Configuration
 
 In [`lib/ai-service.ts`](lib/ai-service.ts):
 
 ```typescript
 const completion = await this.groq.chat.completions.create({
-  model: 'moonshotai/kimi-k2-instruct', // Kimi-2 Instruct model
+  model: 'moonshotai/kimi-k2-instruct', // Kimi K2 Instruct model
   messages,
   temperature: 0.6,                     // Adjust creativity (0.0-2.0)
   max_tokens: 4000,                     // Response length (up to 16K)
@@ -222,7 +235,7 @@ npm run start
 
 **Note:** Ensure SQLite is supported on your deployment platform, or migrate to PostgreSQL for production.
 
-## 🌟 Why Groq + Kimi-2?
+## 🌟 Why Groq + Kimi K2?
 
 ### Performance Benefits
 - **Ultra-Fast Inference** - ~250 tokens/second
@@ -249,7 +262,7 @@ npm run start
 ## 🔗 Useful Links
 
 - [Groq Console](https://console.groq.com/) - API keys and documentation
-- [Kimi-2 Model Docs](https://console.groq.com/docs/model/moonshotai/kimi-k2-instruct) - Model specifications
+- [Kimi K2 Model Docs](https://console.groq.com/docs/model/moonshotai/kimi-k2-instruct) - Model specifications
 - [Groq SDK](https://github.com/groq/groq-typescript) - TypeScript SDK
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Tailwind CSS v4 Documentation](https://tailwindcss.com/docs)
@@ -270,7 +283,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [Groq](https://groq.com/) for ultra-fast AI inference
-- [Moonshot AI](https://www.moonshot.cn/) for the Kimi-2 Instruct model
+- [Moonshot AI](https://www.moonshot.cn/) for the Kimi K2 Instruct model
 - [Next.js Team](https://nextjs.org/) for the amazing framework
 - [Tailwind CSS Team](https://tailwindcss.com/) for the utility-first CSS framework
 - [shadcn](https://twitter.com/shadcn) for the beautiful component library
