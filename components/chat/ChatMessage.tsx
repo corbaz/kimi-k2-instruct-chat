@@ -38,7 +38,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           isUser ? 'justify-end' : 'justify-start'
         }`}>
           <Badge variant="outline" className="text-xs">
-            {isUser ? 'Du' : 'Assistent'}
+            {isUser ? 'You' : 'Assistant'}
           </Badge>
           <span>
             {new Date(message.created_at).toLocaleTimeString('de-DE', {
