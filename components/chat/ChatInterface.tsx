@@ -111,7 +111,6 @@ export function ChatInterface() {
       let buffer = '';
       const assistantMessageId = Date.now() + 1;
       let assistantContent = '';
-      let currentStats = { tokens: 0, elapsed: '0.0', tokensPerSecond: '0.0' };
 
       // Add initial empty assistant message
       const initialAssistantMessage: any = {
@@ -120,8 +119,7 @@ export function ChatInterface() {
         role: 'assistant',
         content: '',
         created_at: new Date().toISOString(),
-        isStreaming: true,
-        streamingStats: currentStats
+        isStreaming: true
       };
 
       setMessages(prev => [...prev, initialAssistantMessage]);
@@ -148,9 +146,10 @@ export function ChatInterface() {
                   // Mark streaming as complete
                   setMessages(prev => prev.map(msg => 
                     msg.id === assistantMessageId 
-                      ? { ...msg, isStreaming: false, streamingStats: undefined }
+                      ? { ...msg, isStreaming: false }
                       : msg
                   ));
+                  setIsLoading(false);
                   return;
                 }
 
@@ -182,20 +181,15 @@ export function ChatInterface() {
                       
                     case 'token':
                       assistantContent += parsed.content;
-                      currentStats = parsed.stats;
                       
-                      // Throttle updates to reduce re-renders (update every few tokens)
-                      if (currentStats.tokens % 3 === 0 || parsed.content.includes(' ')) {
-                        setMessages(prev => prev.map(msg => 
-                          msg.id === assistantMessageId 
-                            ? { 
-                                ...msg, 
-                                content: assistantContent,
-                                streamingStats: currentStats
-                              }
-                            : msg
-                        ));
-                      }
+                      setMessages(prev => prev.map(msg => 
+                        msg.id === assistantMessageId 
+                          ? { 
+                              ...msg, 
+                              content: assistantContent
+                            }
+                          : msg
+                      ));
                       break;
                       
                     case 'complete':
@@ -204,11 +198,11 @@ export function ChatInterface() {
                         msg.id === assistantMessageId 
                           ? {
                               ...parsed.assistantMessage,
-                              isStreaming: false,
-                              streamingStats: undefined
+                              isStreaming: false
                             }
                           : msg
                       ));
+                      setIsLoading(false);
                       break;
                       
                     case 'error':

@@ -225,17 +225,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </span>
         </div>
 
-        {/* Show streaming stats for assistant messages */}
-        {!isUser && message.streamingStats && (
-          <div className="mt-1">
-            <StreamingStats
-              tokens={message.streamingStats.tokens}
-              elapsed={message.streamingStats.elapsed}
-              tokensPerSecond={message.streamingStats.tokensPerSecond}
-              isComplete={!message.isStreaming}
-            />
-          </div>
-        )}
       </div>
       
       {isUser && (

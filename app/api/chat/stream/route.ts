@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ChatDatabase } from '@/lib/database';
-import AIService from '@/lib/ai-service';
+import aiService from '@/lib/ai-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +19,11 @@ export async function POST(request: NextRequest) {
 
     // Get conversation history if conversationId is provided
     if (currentConversationId) {
-      conversationHistory = await db.getMessages(currentConversationId);
+      const messages = await db.getMessages(currentConversationId);
+      conversationHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
     }
 
     // Create a ReadableStream for streaming response
@@ -27,15 +31,14 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         let fullResponse = '';
-        let startTime = Date.now();
-        let tokenCount = 0;
 
         try {
           // Save user message first
           if (!currentConversationId) {
             // Create new conversation
-            const title = await AIService.generateConversationTitle(message);
-            currentConversationId = await db.createConversation(title);
+            const title = await aiService.generateConversationTitle(message);
+            const conversation = await db.createConversation(title);
+            currentConversationId = conversation.id;
           }
 
           const userMessage = await db.addMessage(currentConversationId, 'user', message);
@@ -48,23 +51,12 @@ export async function POST(request: NextRequest) {
           })}\n\n`));
 
           // Stream AI response
-          const aiService = AIService.getInstance();
           for await (const chunk of aiService.generateStreamingResponse(message, conversationHistory)) {
             fullResponse += chunk;
-            tokenCount++;
-            
-            const currentTime = Date.now();
-            const elapsedTime = (currentTime - startTime) / 1000; // seconds
-            const tokensPerSecond = tokenCount / elapsedTime;
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
               type: 'token',
-              content: chunk,
-              stats: {
-                tokens: tokenCount,
-                elapsed: elapsedTime.toFixed(2),
-                tokensPerSecond: tokensPerSecond.toFixed(1)
-              }
+              content: chunk
             })}\n\n`));
           }
 
@@ -74,12 +66,7 @@ export async function POST(request: NextRequest) {
           // Send completion data
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'complete',
-            assistantMessage,
-            finalStats: {
-              totalTokens: tokenCount,
-              totalTime: ((Date.now() - startTime) / 1000).toFixed(2),
-              avgTokensPerSecond: (tokenCount / ((Date.now() - startTime) / 1000)).toFixed(1)
-            }
+            assistantMessage
           })}\n\n`));
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
