@@ -6,15 +6,11 @@ import { Message } from "@/lib/database";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { MermaidDiagram } from './MermaidDiagram';
-import katex from 'katex';
 import 'highlight.js/styles/github-dark.css';
-import 'katex/dist/katex.min.css';
 
 interface ChatMessageProps {
   message: Message;
@@ -46,8 +42,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
               </div>
             ) : (
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                rehypePlugins={[rehypeKatex, rehypeRaw, rehypeHighlight, rehypeSanitize]}
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                rehypePlugins={[rehypeRaw, rehypeHighlight, rehypeSanitize]}
                 components={{
                   code: ({ className, children, ...props }: any) => {
                     const match = /language-(\w+)/.exec(className || '');
@@ -68,66 +64,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
                       return <MermaidDiagram chart={code} />;
                     }
 
-                    // Handle LaTeX code blocks
-                    if (language === 'latex' || language === 'tex') {
-                      const code = String(children).replace(/\n$/, '');
-                      
-                      // Clean up common LaTeX document structure commands that KaTeX doesn't support
-                      let cleanedCode = code
-                        .replace(/\\begin\{document\}[\s\S]*?\\end\{document\}/g, (match) => {
-                          // Extract content between \begin{document} and \end{document}
-                          return match.replace(/\\begin\{document\}\s*/, '').replace(/\s*\\end\{document\}/, '');
-                        })
-                        .replace(/\\documentclass\{[^}]*\}/g, '')
-                        .replace(/\\usepackage\{[^}]*\}/g, '')
-                        .replace(/\\title\{[^}]*\}/g, '')
-                        .replace(/\\author\{[^}]*\}/g, '')
-                        .replace(/\\date\{[^}]*\}/g, '')
-                        .replace(/\\maketitle/g, '')
-                        .replace(/\\newpage/g, '')
-                        .replace(/\\clearpage/g, '')
-                        .replace(/\\pagebreak/g, '')
-                        // Fix common spacing and formatting issues
-                        .replace(/\\,/g, '\\,')
-                        .replace(/\\\s+/g, '\\')
-                        // Handle text within math expressions
-                        .replace(/Einstein said \$E = mc\^2\$ is the most famous equation\./g, 'E = mc^2')
-                        .replace(/\$([^$]+)\$/g, '$1') // Remove dollar signs from within LaTeX blocks
-                        .trim();
-
-                      // If the cleaned code is empty, show the original
-                      if (!cleanedCode) {
-                        cleanedCode = code;
-                      }
-
-                      // Try to render with KaTeX
-                      const renderedLatex = katex.renderToString(cleanedCode, {
-                        displayMode: true,
-                        throwOnError: false,
-                        errorColor: '#cc0000',
-                        strict: false,
-                        trust: true,
-                        macros: {
-                          "\\eqref": "\\href{###1}{(\\text{#1})}",
-                          "\\ref": "\\href{###1}{\\text{#1}}",
-                          "\\label": "\\htmlId{#1}{}",
-                          "\\infty": "\\infty",
-                          "\\pi": "\\pi"
-                        }
-                      });
-                      
-                      return (
-                        <div className="my-4 p-4 bg-muted rounded-lg">
-                          <div className="text-xs font-medium text-muted-foreground uppercase mb-2">
-                            LaTeX
-                          </div>
-                          <div
-                            className="katex-display"
-                            dangerouslySetInnerHTML={{ __html: renderedLatex }}
-                          />
-                        </div>
-                      );
-                    }
                     
                     return (
                       <code className={className} {...props}>
@@ -240,7 +176,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   },
                 }}
               >
-                {message.content.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$1$$')}
+                {message.content}
               </ReactMarkdown>
             )}
           </div>
