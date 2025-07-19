@@ -76,7 +76,7 @@ export function ChatInterface() {
     setError(null);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,31 +91,127 @@ export function ChatInterface() {
         throw new Error('Failed to send message');
       }
 
-      const data = await response.json();
-      
-      // If this is a new conversation, update the current conversation
-      if (!currentConversation) {
-        setCurrentConversation({
-          id: data.conversationId,
-          title: data.userMessage.content.slice(0, 50) + '...',
-          created_at: data.userMessage.created_at,
-          updated_at: data.userMessage.created_at,
-        });
-        // Reload conversations to get the new one
-        loadConversations();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable');
       }
 
-      // Add both user and assistant messages
-      setMessages(prev => [
-        ...prev,
-        data.userMessage,
-        data.assistantMessage,
-      ]);
+      let buffer = '';
+      let conversationData: { conversationId: number; userMessage: Message } | null = null;
+      let assistantMessage: any = {
+        id: Date.now(), // Temporary ID
+        conversation_id: 0,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString(),
+        isStreaming: true,
+        streamingStats: { tokens: 0, elapsed: '0.0', tokensPerSecond: '0.0' }
+      };
+
+      // Add user message immediately when we get conversation data
+      let userMessageAdded = false;
+
+      const processStream = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              setIsLoading(false);
+              break;
+            }
+
+            buffer += new TextDecoder().decode(value);
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                if (data === '[DONE]') {
+                  assistantMessage.isStreaming = false;
+                  assistantMessage.streamingStats = undefined;
+                  // Update the final message
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                  ));
+                  return;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  
+                  switch (parsed.type) {
+                    case 'start':
+                      conversationData = {
+                        conversationId: parsed.conversationId,
+                        userMessage: parsed.userMessage
+                      };
+                      assistantMessage.conversation_id = parsed.conversationId;
+                      
+                      // Update conversation if new
+                      if (!currentConversation) {
+                        setCurrentConversation({
+                          id: parsed.conversationId,
+                          title: parsed.userMessage.content.slice(0, 50) + '...',
+                          created_at: parsed.userMessage.created_at,
+                          updated_at: parsed.userMessage.created_at,
+                        });
+                        loadConversations();
+                      }
+
+                      // Add user message and initial assistant message
+                      if (!userMessageAdded) {
+                        setMessages(prev => [...prev, parsed.userMessage, assistantMessage]);
+                        userMessageAdded = true;
+                      }
+                      break;
+                      
+                    case 'token':
+                      assistantMessage.content += parsed.content;
+                      assistantMessage.streamingStats = parsed.stats;
+                      
+                      // Update the streaming message
+                      setMessages(prev => prev.map(msg => 
+                        msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                      ));
+                      break;
+                      
+                    case 'complete':
+                      assistantMessage.id = parsed.assistantMessage.id;
+                      assistantMessage.created_at = parsed.assistantMessage.created_at;
+                      assistantMessage.isStreaming = false;
+                      
+                      // Final update
+                      setMessages(prev => prev.map(msg => 
+                        msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                      ));
+                      break;
+                      
+                    case 'error':
+                      setError(parsed.error);
+                      setIsLoading(false);
+                      return;
+                  }
+                } catch (parseError) {
+                  console.error('Error parsing SSE data:', parseError);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          setIsLoading(false);
+          setError('Error during streaming. Please try again.');
+          console.error('Streaming error:', error);
+        }
+      };
+
+      processStream();
 
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Error sending message. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

@@ -10,10 +10,20 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { MermaidDiagram } from './MermaidDiagram';
+import { StreamingStats } from './StreamingStats';
 import 'highlight.js/styles/github-dark.css';
 
+interface StreamingMessage extends Message {
+  isStreaming?: boolean;
+  streamingStats?: {
+    tokens: number;
+    elapsed: string;
+    tokensPerSecond: string;
+  };
+}
+
 interface ChatMessageProps {
-  message: Message;
+  message: StreamingMessage;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
@@ -214,6 +224,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
             })}
           </span>
         </div>
+
+        {/* Show streaming stats for assistant messages */}
+        {!isUser && message.streamingStats && (
+          <div className="mt-1">
+            <StreamingStats
+              tokens={message.streamingStats.tokens}
+              elapsed={message.streamingStats.elapsed}
+              tokensPerSecond={message.streamingStats.tokensPerSecond}
+              isComplete={!message.isStreaming}
+            />
+          </div>
+        )}
       </div>
       
       {isUser && (

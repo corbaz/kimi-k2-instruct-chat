@@ -66,6 +66,54 @@ Please be helpful, accurate, and provide clear explanations. If you're unsure ab
     }
   }
 
+  async *generateStreamingResponse(
+    userMessage: string,
+    conversationHistory: ChatMessage[] = []
+  ): AsyncGenerator<string, void, unknown> {
+    try {
+      // General purpose system prompt
+      const systemPrompt = `You are a helpful AI assistant. You can help with a wide variety of tasks including:
+
+- Answering questions on various topics
+- Helping with programming and development
+- Providing explanations and tutorials
+- Assisting with problem-solving
+- Creative writing and brainstorming
+- General conversation and support
+
+Please be helpful, accurate, and provide clear explanations. If you're unsure about something, let the user know. Provide code examples when relevant and helpful.`;
+
+      // Prepare messages for the AI
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...conversationHistory.slice(-10), // Keep last 10 messages for context
+        { role: 'user' as const, content: userMessage }
+      ];
+
+      const stream = await this.groq.chat.completions.create({
+        model: 'moonshotai/kimi-k2-instruct',
+        messages,
+        temperature: 0.6,
+        max_tokens: 4000,
+        top_p: 0.9,
+        stream: true,
+        stream_options: {
+          include_usage: true
+        }
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          yield content;
+        }
+      }
+    } catch (error) {
+      console.error('Error generating streaming AI response:', error);
+      throw new Error('Error generating streaming response. Please try again.');
+    }
+  }
+
   // Generate a conversation title based on the first user message
   async generateConversationTitle(firstMessage: string): Promise<string> {
     try {
