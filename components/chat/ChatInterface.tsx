@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +75,17 @@ export function ChatInterface() {
     setIsLoading(true);
     setError(null);
 
+    // Add user message immediately
+    const tempUserMessage: Message = {
+      id: Date.now(),
+      conversation_id: currentConversation?.id || 0,
+      role: 'user',
+      content: content,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, tempUserMessage]);
+
     try {
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
@@ -97,19 +108,22 @@ export function ChatInterface() {
       }
 
       let buffer = '';
-      let conversationData: { conversationId: number; userMessage: Message } | null = null;
-      let assistantMessage: any = {
-        id: Date.now(), // Temporary ID
-        conversation_id: 0,
+      const assistantMessageId = Date.now() + 1;
+      let assistantContent = '';
+      let currentStats = { tokens: 0, elapsed: '0.0', tokensPerSecond: '0.0' };
+
+      // Add initial empty assistant message
+      const initialAssistantMessage: any = {
+        id: assistantMessageId,
+        conversation_id: currentConversation?.id || 0,
         role: 'assistant',
         content: '',
         created_at: new Date().toISOString(),
         isStreaming: true,
-        streamingStats: { tokens: 0, elapsed: '0.0', tokensPerSecond: '0.0' }
+        streamingStats: currentStats
       };
 
-      // Add user message immediately when we get conversation data
-      let userMessageAdded = false;
+      setMessages(prev => [...prev, initialAssistantMessage]);
 
       const processStream = async () => {
         try {
@@ -130,11 +144,11 @@ export function ChatInterface() {
                 const data = line.slice(6);
                 
                 if (data === '[DONE]') {
-                  assistantMessage.isStreaming = false;
-                  assistantMessage.streamingStats = undefined;
-                  // Update the final message
+                  // Mark streaming as complete
                   setMessages(prev => prev.map(msg => 
-                    msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                    msg.id === assistantMessageId 
+                      ? { ...msg, isStreaming: false, streamingStats: undefined }
+                      : msg
                   ));
                   return;
                 }
@@ -144,54 +158,63 @@ export function ChatInterface() {
                   
                   switch (parsed.type) {
                     case 'start':
-                      conversationData = {
-                        conversationId: parsed.conversationId,
-                        userMessage: parsed.userMessage
-                      };
-                      assistantMessage.conversation_id = parsed.conversationId;
-                      
                       // Update conversation if new
-                      if (!currentConversation) {
+                      if (!currentConversation && parsed.conversationId) {
                         setCurrentConversation({
                           id: parsed.conversationId,
-                          title: parsed.userMessage.content.slice(0, 50) + '...',
+                          title: content.slice(0, 50) + '...',
                           created_at: parsed.userMessage.created_at,
                           updated_at: parsed.userMessage.created_at,
                         });
                         loadConversations();
                       }
 
-                      // Add user message and initial assistant message
-                      if (!userMessageAdded) {
-                        setMessages(prev => [...prev, parsed.userMessage, assistantMessage]);
-                        userMessageAdded = true;
-                      }
-                      break;
-                      
-                    case 'token':
-                      assistantMessage.content += parsed.content;
-                      assistantMessage.streamingStats = parsed.stats;
-                      
-                      // Update the streaming message
+                      // Update user message with real ID
                       setMessages(prev => prev.map(msg => 
-                        msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                        msg.id === tempUserMessage.id 
+                          ? { ...parsed.userMessage }
+                          : msg.id === assistantMessageId
+                          ? { ...msg, conversation_id: parsed.conversationId }
+                          : msg
                       ));
                       break;
                       
-                    case 'complete':
-                      assistantMessage.id = parsed.assistantMessage.id;
-                      assistantMessage.created_at = parsed.assistantMessage.created_at;
-                      assistantMessage.isStreaming = false;
+                    case 'token':
+                      assistantContent += parsed.content;
+                      currentStats = parsed.stats;
                       
-                      // Final update
+                      // Throttle updates to reduce re-renders (update every few tokens)
+                      if (currentStats.tokens % 3 === 0 || parsed.content.includes(' ')) {
+                        setMessages(prev => prev.map(msg => 
+                          msg.id === assistantMessageId 
+                            ? { 
+                                ...msg, 
+                                content: assistantContent,
+                                streamingStats: currentStats
+                              }
+                            : msg
+                        ));
+                      }
+                      break;
+                      
+                    case 'complete':
+                      // Final update with real message data
                       setMessages(prev => prev.map(msg => 
-                        msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                        msg.id === assistantMessageId 
+                          ? {
+                              ...parsed.assistantMessage,
+                              isStreaming: false,
+                              streamingStats: undefined
+                            }
+                          : msg
                       ));
                       break;
                       
                     case 'error':
                       setError(parsed.error);
                       setIsLoading(false);
+                      // Remove the empty assistant message on error
+                      setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
                       return;
                   }
                 } catch (parseError) {
@@ -204,6 +227,8 @@ export function ChatInterface() {
           setIsLoading(false);
           setError('Error during streaming. Please try again.');
           console.error('Streaming error:', error);
+          // Remove the empty assistant message on error
+          setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
         }
       };
 
@@ -213,6 +238,8 @@ export function ChatInterface() {
       console.error('Error sending message:', error);
       setError('Error sending message. Please try again.');
       setIsLoading(false);
+      // Remove the user message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempUserMessage.id));
     }
   };
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Database } from '@/lib/database';
+import { ChatDatabase } from '@/lib/database';
 import AIService from '@/lib/ai-service';
 
 export async function POST(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = Database.getInstance();
+    const db = ChatDatabase.getInstance();
     let currentConversationId = conversationId;
     let conversationHistory: any[] = [];
 
