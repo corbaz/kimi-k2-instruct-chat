@@ -190,8 +190,8 @@ export function ChatInterface() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 flex flex-col">
-          <ScrollArea className="flex-1 p-4">
+        <div className="flex-1 flex flex-col relative">
+          <ScrollArea className="flex-1 p-4 pb-24">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <Bot className="w-16 h-16 text-muted-foreground mb-4" />
@@ -220,7 +220,7 @@ export function ChatInterface() {
 
           {/* Error Display */}
           {error && (
-            <div className="mx-4 mb-2">
+            <div className="absolute bottom-24 left-4 right-4 z-10">
               <Card className="p-3 bg-destructive/10 border-destructive/20">
                 <div className="flex items-center gap-2 text-destructive">
                   <AlertCircle className="w-4 h-4" />
@@ -230,12 +230,14 @@ export function ChatInterface() {
             </div>
           )}
 
-          {/* Chat Input */}
-          <ChatInput
-            onSendMessage={sendMessage}
-            isLoading={isLoading}
-            disabled={isLoadingConversations}
-          />
+          {/* Sticky Chat Input */}
+          <div className="absolute bottom-0 left-0 right-0 z-20">
+            <ChatInput
+              onSendMessage={sendMessage}
+              isLoading={isLoading}
+              disabled={isLoadingConversations}
+            />
+          </div>
         </div>
       </div>
     </div>
