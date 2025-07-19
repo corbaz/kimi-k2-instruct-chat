@@ -34,7 +34,7 @@ export function ChatInput({ onSendMessage, isLoading, disabled }: ChatInputProps
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask me anything..."
+          placeholder="Ask Kimi K2 anything..."
           className="min-h-[60px] max-h-[120px] resize-none"
           disabled={disabled || isLoading}
         />

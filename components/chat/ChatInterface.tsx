@@ -173,7 +173,7 @@ export function ChatInterface() {
               <div className="flex items-center gap-2">
                 <Bot className="w-6 h-6 text-primary" />
                 <h1 className="text-xl font-semibold">
-                  AI Chat Assistant
+                  Kimi K2 Instruct Chat
                 </h1>
               </div>
               <Badge variant="secondary">
@@ -196,10 +196,10 @@ export function ChatInterface() {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <Bot className="w-16 h-16 text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">
-                  Welcome to AI Chat Assistant!
+                  Welcome to Kimi K2 Instruct Assistant!
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-md">
-                  I'm here to help you with a wide variety of tasks. Ask me anything!
+                  I'm Kimi K2, your intelligent assistant. Ask me anything!
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <Badge variant="outline">General AI Assistant</Badge>
